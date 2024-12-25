@@ -1,0 +1,22 @@
+{
+  "name": "match-game",
+  "version": "1.0.0",
+  "description": "A 3D match game",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.159.0",
+    "vue": "^3.3.11",
+    "gsap": "^3.12.4"
+  },
+  "devDependencies": {
+    "@types/three": "^0.159.0",
+    "@vitejs/plugin-vue": "^4.5.2",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vue-tsc": "^1.8.25"
+  }
+}
