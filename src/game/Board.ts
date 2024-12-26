@@ -174,76 +174,43 @@ export class Board {
     }
 
     private async handleCubesFalling() {
-        // 按照y坐标排序，确保从下往上处理
-        const emptyPositions: {x: number, y: number, z: number}[] = [];
-        for (let y = 0; y < this.height; y++) {
-            for (let z = 0; z < this.width; z++) {
-                for (let x = 0; x < this.width; x++) {
-                    if (!this.cubes[y][z][x]) {
-                        emptyPositions.push({x, y, z});
+        let hasBlocksFallen;
+        do {
+            hasBlocksFallen = false;
+            // 按照y坐标排序，确保从下往上处理
+            const emptyPositions: {x: number, y: number, z: number}[] = [];
+            for (let y = 0; y < this.height; y++) {
+                for (let z = 0; z < this.width; z++) {
+                    for (let x = 0; x < this.width; x++) {
+                        if (!this.cubes[y][z][x]) {
+                            emptyPositions.push({x, y, z});
+                        }
                     }
                 }
             }
-        }
-        emptyPositions.sort((a, b) => a.y - b.y);
-        
-        for (const pos of emptyPositions) {
-            // 对每个空位，找到它上方的所有方块
-            for (let y = pos.y + 1; y < this.height; y++) {
-                const cube = this.cubes[y][pos.z][pos.x];
-                if (cube) {
-                    // 找到了上方的方块，让它下落
-                    const fallDistance = (y - pos.y) * 1.2; // 1.2是方块间距
-                    this.cubes[pos.y][pos.z][pos.x] = cube;
-                    this.cubes[y][pos.z][pos.x] = null;
-                    await cube.animateFall(fallDistance);
-                    break;
-                }
-            }
-        }
-
-        // 在顶部生成新方块
-        await this.fillNewCubes();
-    }
-
-    private async fillNewCubes() {
-        const spacing = 1.2;
-        const promises: Promise<void>[] = [];
-
-        // 检查顶层的空位
-        for (let z = 0; z < this.width; z++) {
-            for (let x = 0; x < this.width; x++) {
-                for (let y = this.height - 1; y >= 0; y--) {
-                    if (!this.cubes[y][z][x]) {
-                        // 创建新方块
-                        const type = Math.floor(Math.random() * 10) + 1;
-                        const cube = new Cube(type);
-                        
-                        // 设置初始位置（在顶部上方）
-                        const xPos = (x * spacing) - ((this.width - 1) * spacing / 2);
-                        const yPos = ((y + 1) * spacing) - ((this.height - 1) * spacing / 2);
-                        const zPos = (z * spacing) - ((this.width - 1) * spacing / 2);
-                        cube.mesh.position.set(xPos, yPos, zPos);
-                        
-                        this.cubes[y][z][x] = cube;
-                        this.scene.add(cube.mesh);
-                        
-                        // 添加下落动画
-                        promises.push(cube.animateFall(spacing));
+            emptyPositions.sort((a, b) => a.y - b.y);
+            
+            const fallPromises: Promise<void>[] = [];
+            
+            for (const pos of emptyPositions) {
+                // 对每个空位，找到它上方的所有方块
+                for (let y = pos.y + 1; y < this.height; y++) {
+                    const cube = this.cubes[y][pos.z][pos.x];
+                    if (cube) {
+                        // 找到了上方的方块，让它下落
+                        const fallDistance = (y - pos.y) * 1.2; // 1.2是方块间距
+                        this.cubes[pos.y][pos.z][pos.x] = cube;
+                        this.cubes[y][pos.z][pos.x] = null;
+                        fallPromises.push(cube.animateFall(fallDistance));
+                        hasBlocksFallen = true;
+                        break;
                     }
                 }
             }
-        }
-
-        // 等待所有新方块的动画完成
-        await Promise.all(promises);
-    }
-
-    private canMatch(cube1: Cube, cube2: Cube): boolean {
-        if (!cube1 || !cube2 || cube1 === cube2) {
-            return false;
-        }
-        return cube1.type === cube2.type;
+            
+            // 等待所有方块完成下落
+            await Promise.all(fallPromises);
+        } while (hasBlocksFallen); // 如果有方块下落，继续检查
     }
 
     private createNewCube(): Cube {
